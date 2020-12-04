@@ -1,6 +1,5 @@
 appdirs==1.4.4
 backports.functools-lru-cache==1.6.1
-Brotli @ file:///C:/ci/brotli-split_1602517705222/work
 certifi==2020.11.8
 click==7.1.2
 cloudpickle @ file:///home/conda/feedstock_root/build_artifacts/cloudpickle_1598400192773/work
