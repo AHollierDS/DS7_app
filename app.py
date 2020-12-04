@@ -3,26 +3,6 @@ dashboard.py
 
 This script generate an interpretability dashboard for explaining why a customer
 was granted the loan he/she applied for.
-"""
-
-import pandas as pd
-import numpy as np
-import dash
-import dash_core_components as dcc
-import dash_html_components as html
-import dash_functions
-
-from dash.dependencies import Input, Output
-
-
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = dash.Dash(external_stylesheets=external_stylesheets)
-server = app.server
-thres = 0.3
-n_sample=10000
-
-"""
-Build and display the dashboard.
 
 params:
     thres:
@@ -35,15 +15,42 @@ returns:
     a web application displaying the interpretability dashboard
 """
 
+import pandas as pd
+import numpy as np
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import dash_functions
+
+from dash.dependencies import Input, Output
+from rq import Queue
+from worker import conn
+
+# Dashboard parameters
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+app = dash.Dash(external_stylesheets=external_stylesheets)
+server = app.server
+thres = 0.3
+n_sample=10000
+
+# Create a queue
+q = Queue(connection=conn)
+
 # Load data
-df_crit=dash_functions.load_criteria_descriptions()
-df_cust=dash_functions.load_customer_data(n_sample=n_sample)
-df_shap=dash_functions.load_shap_values()
+df_crit = q.enqueue(dash_functions.load_criteria_descriptions)
+df_cust=q.enqueue(dash_functions.load_customer_data, n_sample)
+df_shap=q.enqueue(dash_functions.load_shap_values)
+models = q.enqueue(dash_functions.load_models)
+l_explainers = q.enqueue(dash_functions.load_explainers)
+panel_hist = q.enqueue(dash_functions.load_panel)
+          
+#df_crit=dash_functions.load_criteria_descriptions()
+#df_cust=dash_functions.load_customer_data(n_sample=n_sample)
+#df_shap=dash_functions.load_shap_values()
 
-models = dash_functions.load_models()
-l_explainers = dash_functions.load_explainers()
-
-panel_hist = dash_functions.load_panel()
+#models = dash_functions.load_models()
+#l_explainers = dash_functions.load_explainers()
+#panel_hist = dash_functions.load_panel()
 
 customer_list = df_cust.index.map(
     lambda x : {'label': str(x), 'value':x}).tolist()
