@@ -23,8 +23,6 @@ import dash_html_components as html
 import dash_functions
 
 from dash.dependencies import Input, Output
-from rq import Queue
-from worker import conn
 
 # Dashboard parameters
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -36,8 +34,6 @@ n_sample=10000
 # Load data         
 df_crit=dash_functions.load_criteria_descriptions()
 df_cust=dash_functions.load_customer_data(n_sample=n_sample)
-df_shap=dash_functions.load_shap_values()
-
 
 panel_hist = dash_functions.load_panel()
 
@@ -264,6 +260,8 @@ def update_description(crit, cust=None):
         output=df_crit[df_crit['Row']==crit]['Description'].values[0]
         title=f'Evolution of impact with {crit} value :'
         l_explainers = dash_functions.load_explainers()
+        df_shap=dash_functions.load_shap_values()
+        
         fig=dash_functions.plot_shap_scatter(
             df_cust, df_shap, crit, cust, l_explainers, thres)
 
@@ -275,11 +273,14 @@ def update_description(crit, cust=None):
 
             cust_crit_imp=df_shaps.loc[crit, 0]
             cust_crit_imp='{:.4f}'.format(cust_crit_imp)
+            
         else :
             cust_crit_val='NA'
             cust_crit_imp='NA'
 
         del l_explainers
+        del df_shap
+        
         return output, title, fig, cust_crit_val, cust_crit_imp
 
 
