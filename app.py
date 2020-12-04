@@ -33,22 +33,12 @@ server = app.server
 thres = 0.3
 n_sample=10000
 
-# Create a queue
-#q = Queue(connection=conn)
-
-# Load data
-#df_crit = q.enqueue(dash_functions.load_criteria_descriptions)
-#df_cust=q.enqueue(dash_functions.load_customer_data, n_sample)
-#df_shap=q.enqueue(dash_functions.load_shap_values)
-#models = q.enqueue(dash_functions.load_models)
-#l_explainers = q.enqueue(dash_functions.load_explainers)
-#panel_hist = q.enqueue(dash_functions.load_panel)
-          
+# Load data         
 df_crit=dash_functions.load_criteria_descriptions()
 df_cust=dash_functions.load_customer_data(n_sample=n_sample)
 df_shap=dash_functions.load_shap_values()
-models = dash_functions.load_models()
-l_explainers = dash_functions.load_explainers()
+
+
 panel_hist = dash_functions.load_panel()
 
 customer_list = df_cust.index.map(
@@ -218,9 +208,11 @@ def update_customer(customer_id, n_top):
     Update decision, position in panel, waterfall and top 15 criteria
     when a customer is selected in dropdown.
     """
+    models = dash_functions.load_models()
     # Update customer estimated risk and decision
     risk, decision = dash_functions.predict_decision(
         models, df_cust, customer_id, thres)
+    del models
 
     risk_output='{:.1%}'.format(risk)
     decision_output = 'granted' if decision else 'denied'
@@ -240,12 +232,15 @@ def update_customer(customer_id, n_top):
         fillcolor='yellow')
 
     # Update waterfall
+    l_explainers = dash_functions.load_explainers()
     fig_waterfall = dash_functions.plot_waterfall(
         df_cust, customer_id, n_top, thres, l_explainers)
 
     # Update top n_top tables
     children_top = dash_functions.generate_top_tables(
         n_top, df_cust, customer_id, l_explainers)
+    
+    del l_explainers
 
     return risk_output, decision_output, fig_panel, fig_waterfall, children_top
 
@@ -268,6 +263,7 @@ def update_description(crit, cust=None):
     if crit is not None:
         output=df_crit[df_crit['Row']==crit]['Description'].values[0]
         title=f'Evolution of impact with {crit} value :'
+        l_explainers = dash_functions.load_explainers()
         fig=dash_functions.plot_shap_scatter(
             df_cust, df_shap, crit, cust, l_explainers, thres)
 
@@ -283,6 +279,7 @@ def update_description(crit, cust=None):
             cust_crit_val='NA'
             cust_crit_imp='NA'
 
+        del l_explainers
         return output, title, fig, cust_crit_val, cust_crit_imp
 
 
