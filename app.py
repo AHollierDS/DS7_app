@@ -283,7 +283,7 @@ def generate(thres=0.3, n_sample=10000):
     
     
     # Run the dashboard
-    app.run_server()
+    app.run_server(debug=True)
     
     
 if __name__=="__main__":
