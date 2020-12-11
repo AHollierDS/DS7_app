@@ -220,27 +220,6 @@ def plot_panel(panel_hist, thres):
     return fig
 
 
-def find_base_value(l_explainers):
-    """
-    Calculate shapley base value based on the threshold.
-    
-    params:
-        l_explainers :
-            A list of Shapley explainers.
-            
-    returns:
-        Mean expected_values from explainers. 
-    """
-    # Aggregate explainers expected_values
-    base = 0
-    n_expl = len(l_explainers)
-    
-    for expl in l_explainers:
-        base += (expl.expected_value[0]/n_expl)
-    
-    return base
-
-
 def plot_waterfall(df_cust, customer_id, n_top, thres, base_value, shaps):
     """
     Calculate waterfall based on shapley values for a given customer.
