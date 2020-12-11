@@ -243,14 +243,10 @@ def update_customer(customer_id, n_top):
     
     # Update top n_top tables
     tracemalloc.start()
-    l_explainers = dash_functions.load_explainers()
-    shaps =  dash_functions.shap_explain(l_explainers, customer_id, df_cust)[0]
-    base_value =  dash_functions.find_base_value(l_explainers)
+    shaps, base_value =  dash_functions.shap_explain(customer_id, df_cust)
     
     children_top = dash_functions.generate_top_tables(
-        n_top, df_cust, customer_id, l_explainers)
-    
-    del l_explainers
+        n_top, df_cust, customer_id, shaps)
     
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
@@ -289,17 +285,18 @@ def update_description(crit, cust=None):
     if crit is not None:
         output=df_crit[df_crit['Row']==crit]['Description'].values[0]
         title=f'Evolution of impact with {crit} value :'
-        l_explainers = dash_functions.load_explainers()
+                
+        shaps, base_value =  dash_functions.shap_explain(cust, df_cust)
         df_shap=dash_functions.load_shap_values()
         
         fig=dash_functions.plot_shap_scatter(
-            df_cust, df_shap, crit, cust, l_explainers, thres)
+            df_cust, df_shap, crit, cust, shaps, thres)
 
         if cust is not None:
             cust_crit_val=df_cust.loc[cust, crit]
 
-            shaps = dash_functions.shap_explain(l_explainers, cust, df_cust)
-            df_shaps=pd.DataFrame(shaps[0], index = df_cust.columns)
+            shaps = dash_functions.shap_explain(cust, df_cust)
+            df_shaps=pd.DataFrame(shaps[0].T, index = df_cust.columns)
 
             cust_crit_imp=df_shaps.loc[crit, 0]
             cust_crit_imp='{:.4f}'.format(cust_crit_imp)
@@ -308,7 +305,6 @@ def update_description(crit, cust=None):
             cust_crit_val='NA'
             cust_crit_imp='NA'
 
-        del l_explainers
         del df_shap
         
         current, peak = tracemalloc.get_traced_memory()
@@ -320,7 +316,7 @@ def update_description(crit, cust=None):
 
 # Run the dashboard   
 if __name__=="__main__":
-    app.run_server(debug=True)
-    app.enable_dev_tools(dev_tools_ui=True)
-    app.app.enable_dev_tools(dev_tools_ui=True, use_reloader=False)
+    app.run_server(debug=False)
+    #app.enable_dev_tools(dev_tools_ui=True)
+    #app.app.enable_dev_tools(dev_tools_ui=True, use_reloader=False)
     
