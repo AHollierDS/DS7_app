@@ -265,9 +265,6 @@ def plot_waterfall(df_cust, customer_id, n_top, thres, base_value, shaps):
         Loan applications with a final score below 0 are denied.
     """ 
     # Set data for waterfall   
-    #shaps = shap_explain(l_explainers, customer_id, df_cust)
-    #base_value = find_base_value(l_explainers)
-    
     df_waterfall=pd.DataFrame(shaps.T, index = df_cust.columns)
     df_waterfall.columns = ['values']
     df_waterfall['abs']=df_waterfall['values'].apply('abs')
@@ -314,7 +311,7 @@ def plot_waterfall(df_cust, customer_id, n_top, thres, base_value, shaps):
     return fig
 
 
-def generate_top_tables(n_top, df_cust, customer_id, l_explainers):
+def generate_top_tables(n_top, df_cust, customer_id, shaps):
     """
     For a given customer id, retrieves the n_top criteria having most impact on loan decision.
     
@@ -325,8 +322,8 @@ def generate_top_tables(n_top, df_cust, customer_id, l_explainers):
             A customer description DataFrame.
         customer_id :
             The SK_ID_CURR value of the customer for whom main criteria are searched.
-        l_explainers :
-            A list of Shapley explainers.
+        shaps :
+            A numpy array containing aggregated shapley values.
     
     returns:
         Two tables of main criteria :
@@ -334,8 +331,7 @@ def generate_top_tables(n_top, df_cust, customer_id, l_explainers):
         - Top decisive overall criteria compared to the customer values.
     """
     # Retrieve shap values for selected customer 
-    shaps = shap_explain(l_explainers, customer_id, df_cust)
-    df_1 =pd.DataFrame(shaps[0], index = df_cust.columns)
+    df_1 =pd.DataFrame(shaps[0].T, index = df_cust.columns)
     df_1.columns=['Impact']
 
     # Retrieve criteria values for selected customer
