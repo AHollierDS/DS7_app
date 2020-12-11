@@ -229,7 +229,7 @@ def find_base_value(l_explainers):
     return base
 
 
-def plot_waterfall(df_cust, customer_id, n_top, thres, l_explainers):
+def plot_waterfall(df_cust, customer_id, n_top, thres, base_value, shaps):
     """
     Calculate waterfall based on shapley values for a given customer.
     
@@ -251,9 +251,10 @@ def plot_waterfall(df_cust, customer_id, n_top, thres, l_explainers):
         Loan applications with a final score below 0 are denied.
     """ 
     # Set data for waterfall   
-    shaps = shap_explain(l_explainers, customer_id, df_cust)
-    df_waterfall=pd.DataFrame(shaps[0], index = df_cust.columns)
+    #shaps = shap_explain(l_explainers, customer_id, df_cust)
+    #base_value = find_base_value(l_explainers)
     
+    df_waterfall=pd.DataFrame(shaps, index = df_cust.columns)
     df_waterfall.columns = ['values']
     df_waterfall['abs']=df_waterfall['values'].apply('abs')
     df_waterfall.sort_values(by='abs', inplace=True)
@@ -263,8 +264,6 @@ def plot_waterfall(df_cust, customer_id, n_top, thres, l_explainers):
     df_others = pd.DataFrame(df_waterfall.iloc[:-n_top].sum(axis=0)).T
     df_others.index = [f'others (n={len(df_waterfall.iloc[:-n_top])})']
     df_waterfall = df_others.append(df_top)
-    
-    base_value = find_base_value(l_explainers)
     
     # Plot waterfall
     fig = go.Figure(
