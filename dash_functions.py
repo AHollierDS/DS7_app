@@ -92,11 +92,11 @@ def load_customer_data(n_sample=None):
     return df_cust
 
 
-def load_explainers():
+def load_explainers(n_expl):
     """
     Returns the list of Shapley explainers (one per LightGBM classifier)
     """
-    file = 'shap_explainers.joblib'
+    file = 'shapExplainers/ShapExplainers_{}.joblib'
     l_explainers = joblib.load(source_path+file)
     
     return l_explainers
