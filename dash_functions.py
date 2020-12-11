@@ -400,7 +400,7 @@ def generate_top_tables(n_top, df_cust, customer_id, shaps):
     return children
 
 
-def plot_shap_scatter(df_cust, df_shap, crit, cust, l_explainers, thres):
+def plot_shap_scatter(df_cust, df_shap, crit, cust, shaps, thres):
     """
     Shows evolution of SHAP value depending on selected criteria's value.
     
@@ -412,8 +412,8 @@ def plot_shap_scatter(df_cust, df_shap, crit, cust, l_explainers, thres):
         cust:
             A customer's ID.
             If not None, shows where the selected customer stands on the plot.
-        l_explainers :
-            A list of Shapley explainers.
+        shaps :
+            A numpy array containing aggregated shapley values.
         thres:
             Threshold risk value above which a customer's loan is denied.
             
@@ -457,7 +457,6 @@ def plot_shap_scatter(df_cust, df_shap, crit, cust, l_explainers, thres):
         # Customer Shap and value for selected criteria
         cust_value=df_cust.loc[cust, crit]
         
-        shaps = shap_explain(l_explainers, cust, df_cust)
         df_shaps=pd.DataFrame(shaps[0], index = df_cust.columns)
         cust_shap=df_shaps.loc[crit, 0]
         
