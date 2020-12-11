@@ -115,25 +115,30 @@ def shap_explain(customer_id, df_cust, n_expl=5):
     
     params:
         customer_id :
-            The customer for whom to explain loan decision.
+            The customer for whom to explain loan decision ;
         df_cust :
-            A customer description DataFrame
+            A customer description DataFrame ;
         n_expl :
-            numbers of explainers to load (from 0 to 4)
+            numbers of explainers to load (from 0 to 4).
             
     returns :
-        A numpy array containing aggregated shapley values.          
+        shap_vals : 
+            A numpy array containing aggregated shapley values ;
+        base_value :
+            the aggregated base value for all selected explainers.
     """
     customer_values = df_cust.loc[customer_id].values.reshape(1,-1)
     shap_vals = np.zeros(customer_values.shape)
+    base_value=0
     
     # Aggregate explainations from every SHAP explainer
     for i in range(n_expl):
         explainer = load_explainer(i)
         shapley = explainer.shap_values(customer_values)[0]
         shap_vals += (shapley/n_expl)
+        base_value += (explainer.expected_value[0]/n_expl)
         
-    return shap_vals
+    return shap_vals, base_value
 
 
 def load_shap_values():
@@ -250,8 +255,10 @@ def plot_waterfall(df_cust, customer_id, n_top, thres, base_value, shaps):
             Number of top criteria to display.
         thres:
             Threshold risk value above which a customer's loan is denied.
-        l_explainers :
-            A list of Shapley explainers.
+        base_value : 
+            the aggregated base value for selected shap explainers.
+        shaps :
+            A numpy array containing aggregated shapley values.
             
     returns:
         The waterfall figure for selected customer.
@@ -261,7 +268,7 @@ def plot_waterfall(df_cust, customer_id, n_top, thres, base_value, shaps):
     #shaps = shap_explain(l_explainers, customer_id, df_cust)
     #base_value = find_base_value(l_explainers)
     
-    df_waterfall=pd.DataFrame(shaps, index = df_cust.columns)
+    df_waterfall=pd.DataFrame(shaps.T, index = df_cust.columns)
     df_waterfall.columns = ['values']
     df_waterfall['abs']=df_waterfall['values'].apply('abs')
     df_waterfall.sort_values(by='abs', inplace=True)
