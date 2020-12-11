@@ -30,7 +30,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(external_stylesheets=external_stylesheets)
 server = app.server
 thres = 0.3
-n_sample=10000
+n_sample=500
 
 
 # Load data
@@ -216,7 +216,11 @@ def update_customer(customer_id, n_top):
     del models
 
     risk_output='{:.1%}'.format(risk)
+    cust_bin = risk//0.01/100
+    del risk
+    
     decision_output = 'granted' if decision else 'denied'
+    del decision
     
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
@@ -225,8 +229,7 @@ def update_customer(customer_id, n_top):
     # Show customer position on customer panel
     tracemalloc.start()
     fig_panel = dash_functions.plot_panel(panel_hist, thres)
-
-    cust_bin = risk//0.01/100
+    
     i_bin = panel_hist[1].tolist().index(cust_bin)
     cust_height = panel_hist[0][i_bin]
 
@@ -236,6 +239,7 @@ def update_customer(customer_id, n_top):
         x1=cust_bin+0.005, 
         y0=0, y1=cust_height, 
         fillcolor='yellow')
+    del cust_bin, cust_height, i_bin
     
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
@@ -258,11 +262,13 @@ def update_customer(customer_id, n_top):
     fig_waterfall = dash_functions.plot_waterfall(
         df_cust, customer_id, n_top, thres, base_value, shaps)
     current, peak = tracemalloc.get_traced_memory()
+    del shaps
     
     tracemalloc.stop()
     print(f"Waterfall update - Peak memory usage was {peak / 10**6}MB")
 
     return risk_output, decision_output, fig_panel, fig_waterfall, children_top
+    del risk_output, decision_output, fig_panel, fig_waterfall, children_top
 
 
 # Callbacks with a new criteria selected
