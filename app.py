@@ -17,6 +17,7 @@ returns:
 
 import pandas as pd
 import numpy as np
+import tracemalloc
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -31,14 +32,16 @@ server = app.server
 thres = 0.3
 n_sample=10000
 
+<<<<<<< HEAD
 # Create a queue
 
 # Load data        
+=======
+# Load data         
+>>>>>>> loading_call
 df_crit=dash_functions.load_criteria_descriptions()
 df_cust=dash_functions.load_customer_data(n_sample=n_sample)
-df_shap=dash_functions.load_shap_values()
-models = dash_functions.load_models()
-l_explainers = dash_functions.load_explainers()
+
 panel_hist = dash_functions.load_panel()
 
 customer_list = df_cust.index.map(
@@ -208,14 +211,24 @@ def update_customer(customer_id, n_top):
     Update decision, position in panel, waterfall and top 15 criteria
     when a customer is selected in dropdown.
     """
+    tracemalloc.start()
+    
+    models = dash_functions.load_models()
+    
     # Update customer estimated risk and decision
     risk, decision = dash_functions.predict_decision(
         models, df_cust, customer_id, thres)
+    del models
 
     risk_output='{:.1%}'.format(risk)
     decision_output = 'granted' if decision else 'denied'
+    
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    print(f"Decision update - Peak memory usage was {peak / 10**6}MB")
 
     # Show customer position on customer panel
+    tracemalloc.start()
     fig_panel = dash_functions.plot_panel(panel_hist, thres)
 
     cust_bin = risk//0.01/100
@@ -228,14 +241,35 @@ def update_customer(customer_id, n_top):
         x1=cust_bin+0.005, 
         y0=0, y1=cust_height, 
         fillcolor='yellow')
-
-    # Update waterfall
-    fig_waterfall = dash_functions.plot_waterfall(
-        df_cust, customer_id, n_top, thres, l_explainers)
-
+    
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    print(f"Panel update - Peak memory usage was {peak / 10**6}MB")
+    
     # Update top n_top tables
+    tracemalloc.start()
+    l_explainers = dash_functions.load_explainers()
+    shaps =  dash_functions.shap_explain(l_explainers, customer_id, df_cust)[0]
+    base_value =  dash_functions.find_base_value(l_explainers)
+    
     children_top = dash_functions.generate_top_tables(
         n_top, df_cust, customer_id, l_explainers)
+    
+    del l_explainers
+    
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    print(f"Top tables update - Peak memory usage was {peak / 10**6}MB")
+
+    # Update waterfall
+    tracemalloc.start()
+
+    fig_waterfall = dash_functions.plot_waterfall(
+        df_cust, customer_id, n_top, thres, base_value, shaps)
+    current, peak = tracemalloc.get_traced_memory()
+    
+    tracemalloc.stop()
+    print(f"Waterfall update - Peak memory usage was {peak / 10**6}MB")
 
     return risk_output, decision_output, fig_panel, fig_waterfall, children_top
 
@@ -255,9 +289,14 @@ def update_description(crit, cust=None):
     """
     Plot scatter plot for evolution of impact with change in criteria value.
     """
+    tracemalloc.start()
+    
     if crit is not None:
         output=df_crit[df_crit['Row']==crit]['Description'].values[0]
         title=f'Evolution of impact with {crit} value :'
+        l_explainers = dash_functions.load_explainers()
+        df_shap=dash_functions.load_shap_values()
+        
         fig=dash_functions.plot_shap_scatter(
             df_cust, df_shap, crit, cust, l_explainers, thres)
 
@@ -269,15 +308,27 @@ def update_description(crit, cust=None):
 
             cust_crit_imp=df_shaps.loc[crit, 0]
             cust_crit_imp='{:.4f}'.format(cust_crit_imp)
+            
         else :
             cust_crit_val='NA'
             cust_crit_imp='NA'
 
+        del l_explainers
+        del df_shap
+        
+        current, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+        print(f"Criteria update - Peak memory usage was {peak / 10**6}MB")
+        
         return output, title, fig, cust_crit_val, cust_crit_imp
 
 
 # Run the dashboard   
 if __name__=="__main__":
     app.run_server(debug=True)
+<<<<<<< HEAD
     app.enable_dev_tools(dev_tools_ui=True)
+=======
+    app.app.enable_dev_tools(dev_tools_ui=True, use_reloader=False)
+>>>>>>> loading_call
     
