@@ -23,8 +23,6 @@ import dash_html_components as html
 import dash_functions
 
 from dash.dependencies import Input, Output
-from rq import Queue
-from worker import conn
 
 # Dashboard parameters
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -34,16 +32,8 @@ thres = 0.3
 n_sample=10000
 
 # Create a queue
-#q = Queue(connection=conn)
 
-# Load data
-#df_crit = q.enqueue(dash_functions.load_criteria_descriptions)
-#df_cust=q.enqueue(dash_functions.load_customer_data, n_sample)
-#df_shap=q.enqueue(dash_functions.load_shap_values)
-#models = q.enqueue(dash_functions.load_models)
-#l_explainers = q.enqueue(dash_functions.load_explainers)
-#panel_hist = q.enqueue(dash_functions.load_panel)
-          
+# Load data        
 df_crit=dash_functions.load_criteria_descriptions()
 df_cust=dash_functions.load_customer_data(n_sample=n_sample)
 df_shap=dash_functions.load_shap_values()
@@ -289,4 +279,5 @@ def update_description(crit, cust=None):
 # Run the dashboard   
 if __name__=="__main__":
     app.run_server(debug=True)
+    app.enable_dev_tools(dev_tools_ui=True)
     
