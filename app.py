@@ -32,13 +32,8 @@ server = app.server
 thres = 0.3
 n_sample=10000
 
-<<<<<<< HEAD
-# Create a queue
 
-# Load data        
-=======
-# Load data         
->>>>>>> loading_call
+# Load data
 df_crit=dash_functions.load_criteria_descriptions()
 df_cust=dash_functions.load_customer_data(n_sample=n_sample)
 
@@ -326,9 +321,6 @@ def update_description(crit, cust=None):
 # Run the dashboard   
 if __name__=="__main__":
     app.run_server(debug=True)
-<<<<<<< HEAD
     app.enable_dev_tools(dev_tools_ui=True)
-=======
     app.app.enable_dev_tools(dev_tools_ui=True, use_reloader=False)
->>>>>>> loading_call
     
