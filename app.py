@@ -287,4 +287,5 @@ def update_description(crit, cust=None):
 # Run the dashboard   
 if __name__=="__main__":
     app.run_server(debug=True)
+    app.app.enable_dev_tools(dev_tools_ui=True)
     
