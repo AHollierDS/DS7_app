@@ -121,6 +121,9 @@ app.layout = html.Div(children=[
                     ])])]
     ),
 
+    # Storing shap values for selected customer
+    dcc.Store(id='shapleys'),
+    
     # Customer position vs customers panel
     html.H2(children='Customer position in customer panel',style=H2_style),
     html.Button('Update panel', id='maj_panel', n_clicks=0),
@@ -203,9 +206,10 @@ app.layout = html.Div(children=[
 
 # Callback when new customer is selected
 @app.callback(
-    [Output(component_id='customer_risk', component_property='children'),
-     Output(component_id='customer_decision', component_property='children')],
-    Input(component_id='customer_selection', component_property='value'),
+    [Output('customer_risk', 'children'),
+     Output('customer_decision', 'children'),
+     Output('shapleys', 'data')],
+    Input('customer_selection', 'value'),
     prevent_initial_call=True
 )
 
@@ -229,11 +233,14 @@ def update_customer(customer_id):
     decision_output = 'granted' if decision else 'denied'
     del decision
     
+    shaps, base_value =  dash_functions.shap_explain(customer_id, df_cust)
+    dic={'shaps':shaps, 'base':base_value}
+    
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     print(f"Decision update - Peak memory usage was {peak / 10**6}MB")
 
-    return risk_output, decision_output
+    return risk_output, decision_output, dic
     del risk_output, decision_output, current, peak
     
     
@@ -280,22 +287,25 @@ def update_panel(n_clicks, customer_id, customer_risk):
 @app.callback(
     Output('waterfall', 'figure'),
     Input('maj_water', 'n_clicks'),
-    [State('top_slider', 'value'),
+    [State('shapleys', 'data'),
+     State('top_slider', 'value'),
      State('customer_selection', 'value')],
     prevent_initial_call=True
 )
 
-def update_water(n_cliks, n_top, customer_id):
+def update_water(n_clicks, shapleys, n_top, customer_id):
     """
     Generate waterfall and top tables of major criteria for a give customer.
     """
     # Update waterfall
     tracemalloc.start()
-    shaps, base_value =  dash_functions.shap_explain(customer_id, df_cust)
+    
+    shaps = np.array(shapleys['shaps'])
+    base_value = shapleys['base']
     
     fig_waterfall = dash_functions.plot_waterfall(
         df_cust, customer_id, n_top, thres, base_value, shaps)
-    del shaps
+    del shaps, base_value
     
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
@@ -309,17 +319,18 @@ def update_water(n_cliks, n_top, customer_id):
 @app.callback(
     Output('top_tables', 'children'),
     Input('maj_tables', 'n_clicks'),
-    [State('top_slider', 'value'),
+    [State('shapleys', 'data'),
+     State('top_slider', 'value'),
      State('customer_selection', 'value')],
     prevent_initial_call=True
 )    
 
-def update_tables(n_click, n_top, customer_id):
+def update_tables(n_click, shapleys, n_top, customer_id):
     """
     """
     # Update top n_top tables
     tracemalloc.start()
-    shaps, base_value =  dash_functions.shap_explain(customer_id, df_cust)
+    shaps = np.array(shapleys['shaps'])
     
     children_top = dash_functions.generate_top_tables(
         n_top, df_cust, customer_id, shaps)
@@ -340,12 +351,13 @@ def update_tables(n_click, n_top, customer_id):
      Output('cust_crit_value', 'children'),
      Output('cust_crit_impact', 'children')],
     Input('maj_crit', 'n_clicks'),
-    [State('crit_selection', 'value'),
+    [State('shapleys', 'data'),
+     State('crit_selection', 'value'),
      State('customer_selection', 'value')],
     prevent_initial_call=True
 )
 
-def update_description(n_click, crit, cust):
+def update_description(n_click, shapleys, crit, cust):
     """
     Plot scatter plot for evolution of impact with change in criteria value.
     """
@@ -355,7 +367,7 @@ def update_description(n_click, crit, cust):
         output=df_crit[df_crit['Row']==crit]['Description'].values[0]
         title=f'Evolution of impact with {crit} value :'
                 
-        shaps, base_value =  dash_functions.shap_explain(cust, df_cust)
+        shaps=np.array(shapleys['shaps'])
         df_shap=dash_functions.load_shap_values()
         
         fig=dash_functions.plot_shap_scatter(
@@ -364,7 +376,6 @@ def update_description(n_click, crit, cust):
         if cust is not None:
             cust_crit_val=df_cust.loc[cust, crit]
 
-            shaps = dash_functions.shap_explain(cust, df_cust)
             df_shaps=pd.DataFrame(shaps[0].T, index = df_cust.columns)
 
             cust_crit_imp=df_shaps.loc[crit, 0]
