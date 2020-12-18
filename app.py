@@ -205,7 +205,8 @@ app.layout = html.Div(children=[
 @app.callback(
     [Output(component_id='customer_risk', component_property='children'),
      Output(component_id='customer_decision', component_property='children')],
-    Input(component_id='customer_selection', component_property='value')
+    Input(component_id='customer_selection', component_property='value'),
+    prevent_initial_call=True
 )
 
 def update_customer(customer_id):
@@ -241,7 +242,8 @@ def update_customer(customer_id):
     Output('panel', 'figure'),
     Input('maj_panel', 'n_clicks'),
     State('customer_selection', 'value'),
-    State('customer_risk', 'children')
+    State('customer_risk', 'children'),
+    prevent_initial_call=True
 )   
     
 def update_panel(n_clicks, customer_id, customer_risk):
@@ -279,7 +281,8 @@ def update_panel(n_clicks, customer_id, customer_risk):
     Output('waterfall', 'figure'),
     Input('maj_water', 'n_clicks'),
     [State('top_slider', 'value'),
-     State('customer_selection', 'value')]
+     State('customer_selection', 'value')],
+    prevent_initial_call=True
 )
 
 def update_water(n_cliks, n_top, customer_id):
@@ -307,7 +310,8 @@ def update_water(n_cliks, n_top, customer_id):
     Output('top_tables', 'children'),
     Input('maj_tables', 'n_clicks'),
     [State('top_slider', 'value'),
-     State('customer_selection', 'value')]
+     State('customer_selection', 'value')],
+    prevent_initial_call=True
 )    
 
 def update_tables(n_click, n_top, customer_id):
@@ -337,7 +341,8 @@ def update_tables(n_click, n_top, customer_id):
      Output('cust_crit_impact', 'children')],
     Input('maj_crit', 'n_clicks'),
     [State('crit_selection', 'value'),
-     State('customer_selection', 'value')]
+     State('customer_selection', 'value')],
+    prevent_initial_call=True
 )
 
 def update_description(n_click, crit, cust):
