@@ -49,10 +49,20 @@ logo = 'https://user.oc-static.com/upload/2019/02/25/15510866018677_'+\
 title_style={'font-weight':'bold', 'text-align':'center', 
              'background-color':'darkblue', 'color':'white'}
 H2_style = {'background-color':'lightblue', 'font-weight':'bold'}
+button_init_style = {'background-color' : '#f44336', 'color' : 'white'}
+button_maj_style = {'background-color' : '#e7e7e7', 'color' : 'black'}
+
 
 # Dashboard layout
 app.layout = html.Div(children=[
 
+    # Button states
+    dcc.Store(id='panel_state', data=button_init_style),
+    dcc.Store(id='expl_state', data=button_init_style),
+    dcc.Store(id='waterfall_state', data=button_init_style),
+    dcc.Store(id='tables_state', data=button_init_style),
+    dcc.Store(id='crit_state', data=button_init_style),
+    
     # Dash header
     html.Div(
         className='row',
@@ -136,8 +146,10 @@ app.layout = html.Div(children=[
         children = [
             html.Button('Load explanations', id='maj_explain', 
                         n_clicks=0, className='two columns'),
+            
             html.Button('Update waterfall', id='maj_water', 
                         n_clicks=0, className='two columns'),
+            
             html.Button('Update top tables', id='maj_tables', 
                         n_clicks=0, className='two columns') 
         ]
@@ -171,9 +183,13 @@ app.layout = html.Div(children=[
     html.Div(
         className='row',
         children=[
-         # Criteria selection and description
+            
+        # Criteria selection and description
         html.H2(children='Criteria description', style=H2_style),
-        html.Button('Update criteria description', id='maj_crit', n_clicks=0),
+            
+        html.Button('Update criteria description', id='maj_crit', 
+                    n_clicks=0),
+            
         html.Div(
             children=[
                 html.Div(
@@ -209,7 +225,8 @@ app.layout = html.Div(children=[
 # Callback when new customer is selected
 @app.callback(
     [Output('customer_risk', 'children'),
-     Output('customer_decision', 'children')],
+     Output('customer_decision', 'children')
+    ],
     Input('customer_selection', 'value'),
     prevent_initial_call=True
 )
@@ -244,7 +261,8 @@ def update_customer(customer_id):
     
 # Callback for loading explainations
 @app.callback(
-    Output('shapleys', 'data'),
+    [Output('shapleys', 'data'),
+    Output('expl_state', 'data')],
     Input('maj_explain', 'n_clicks'),
     State('customer_selection', 'value'),
     prevent_initial_call=True
@@ -256,14 +274,17 @@ def update_explaination(n_clicks, customer_id):
     shaps, base_value =  dash_functions.shap_explain(customer_id, df_cust)
     dic={'shaps':shaps, 'base':base_value}
     
-    return dic
+    style = button_maj_style
+    
+    return dic, style
     del shaps, base_value, dic
     
     
     
 # Callback for updating panel
 @app.callback(
-    Output('panel', 'figure'),
+    [Output('panel', 'figure'),
+     Output('panel_state', 'data')],
     Input('maj_panel', 'n_clicks'),
     State('customer_selection', 'value'),
     State('customer_risk', 'children'),
@@ -292,17 +313,20 @@ def update_panel(n_clicks, customer_id, customer_risk):
         fillcolor='yellow')
     del cust_bin, cust_height, i_bin
     
+    style = button_maj_style
+    
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     print(f"Panel update - Peak memory usage was {peak / 10**6}MB")
     
-    return fig_panel
+    return fig_panel, style
     del panel_hist, fig_panel, current, peak
     
     
 # Callback for updating waterfall
 @app.callback(
-    Output('waterfall', 'figure'),
+    [Output('waterfall', 'figure'),
+     Output('waterfall_state', 'data')],
     Input('maj_water', 'n_clicks'),
     [State('shapleys', 'data'),
      State('top_slider', 'value'),
@@ -324,17 +348,20 @@ def update_water(n_clicks, shapleys, n_top, customer_id):
         df_cust, customer_id, n_top, thres, base_value, shaps)
     del shaps, base_value
     
+    style = button_maj_style
+    
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     print(f"Waterfall update - Peak memory usage was {peak / 10**6}MB")
 
-    return fig_waterfall
+    return fig_waterfall, style
     del fig_waterfall, current, peak, shaps, base_value
     
     
 # Callback for updating top tables
 @app.callback(
-    Output('top_tables', 'children'),
+    [Output('top_tables', 'children'),
+     Output('tables_state', 'data')],
     Input('maj_tables', 'n_clicks'),
     [State('shapleys', 'data'),
      State('top_slider', 'value'),
@@ -352,11 +379,13 @@ def update_tables(n_click, shapleys, n_top, customer_id):
     children_top = dash_functions.generate_top_tables(
         n_top, df_cust, customer_id, shaps)
     
+    style = button_maj_style
+    
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     print(f"Top tables update - Peak memory usage was {peak / 10**6}MB")
     
-    return children_top
+    return children_top, style
     del children_top, shaps, base_value, current, peak
 
     
@@ -366,7 +395,8 @@ def update_tables(n_click, shapleys, n_top, customer_id):
      Output('scatter_title', 'children'),
      Output('scatter_plot', 'figure'),
      Output('cust_crit_value', 'children'),
-     Output('cust_crit_impact', 'children')],
+     Output('cust_crit_impact', 'children'),
+     Output('crit_state', 'data')],
     Input('maj_crit', 'n_clicks'),
     [State('shapleys', 'data'),
      State('crit_selection', 'value'),
@@ -404,16 +434,54 @@ def update_description(n_click, shapleys, crit, cust):
 
         del df_shap
         
+        style = button_maj_style
+        
         current, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
         print(f"Criteria update - Peak memory usage was {peak / 10**6}MB")
         
-        return output, title, fig, cust_crit_val, cust_crit_imp
+        return output, title, fig, cust_crit_val, cust_crit_imp, style
 
+    
+# Callbacks for changing state of a button
+@app.callback(
+    Output('maj_panel', 'style'),
+    Input('panel_state','data')
+)
+def panel_style(style):
+    return style
 
+@app.callback(
+    Output('maj_explain', 'style'),
+    Input('expl_state','data')
+)
+def panel_style(style):
+    return style
+
+@app.callback(
+    Output('maj_water', 'style'),
+    Input('waterfall_state','data')
+)
+def panel_style(style):
+    return style
+
+@app.callback(
+    Output('maj_tables', 'style'),
+    Input('tables_state','data')
+)
+def panel_style(style):
+    return style
+
+@app.callback(
+    Output('maj_crit', 'style'),
+    Input('crit_state','data')
+)
+def panel_style(style):
+    return style
+    
 # Run the dashboard   
 if __name__=="__main__":
     app.run_server(debug=False)
-    #app.enable_dev_tools(dev_tools_ui=True)
-    #app.app.enable_dev_tools(dev_tools_ui=True, use_reloader=False)
+    app.enable_dev_tools(dev_tools_ui=True)
+    app.app.enable_dev_tools(dev_tools_ui=True, use_reloader=False)
     
