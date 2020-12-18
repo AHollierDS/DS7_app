@@ -23,7 +23,8 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_functions
 
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
+
 
 # Dashboard parameters
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -37,7 +38,6 @@ n_sample=500
 df_crit=dash_functions.load_criteria_descriptions()
 df_cust=dash_functions.load_customer_data(n_sample=n_sample)
 
-panel_hist = dash_functions.load_panel()
 
 customer_list = df_cust.index.map(
     lambda x : {'label': str(x), 'value':x}).tolist()
@@ -122,10 +122,11 @@ app.layout = html.Div(children=[
     ),
 
     # Customer position vs customers panel
-    html.H2(children='Customer position in customer panel',
-           style=H2_style),
+    html.H2(children='Customer position in customer panel',style=H2_style),
+    html.Button('Update panel', id='maj_panel', n_clicks=0),
     dcc.Graph(id='panel', 
-              figure=dash_functions.plot_panel(panel_hist, thres)),
+              figure=dash_functions.plot_panel(panel_hist, thres)
+             ),
 
     # Top criteria section
     html.H2(children='Most important criteria', style =H2_style),
@@ -157,7 +158,7 @@ app.layout = html.Div(children=[
         className='row',
         children=[
          # Criteria selection and description
-        html.H2(children='Criteria description', style =H2_style),
+        html.H2(children='Criteria description', style=H2_style),
         html.Div(
             children=[
                 html.Div(
@@ -193,21 +194,17 @@ app.layout = html.Div(children=[
 # Callback when new customer is selected
 @app.callback(
     [Output(component_id='customer_risk', component_property='children'),
-     Output(component_id='customer_decision', component_property='children'),
-     Output(component_id='panel', component_property='figure'),
-     Output(component_id='waterfall', component_property='figure'),
-     Output(component_id='top_tables', component_property='children')],
-    [Input(component_id='customer_selection', component_property='value'),
-     Input(component_id='top_slider', component_property='value')]
+     Output(component_id='customer_decision', component_property='children')],
+    Input(component_id='customer_selection', component_property='value')
 )
 
-def update_customer(customer_id, n_top):
+def update_customer(customer_id):
     """
     Update decision, position in panel, waterfall and top 15 criteria
     when a customer is selected in dropdown.
     """
-    tracemalloc.start()
     
+    tracemalloc.start()
     models = dash_functions.load_models()
     
     # Update customer estimated risk and decision
@@ -216,7 +213,6 @@ def update_customer(customer_id, n_top):
     del models
 
     risk_output='{:.1%}'.format(risk)
-    cust_bin = risk//0.01/100
     del risk
     
     decision_output = 'granted' if decision else 'denied'
@@ -226,10 +222,26 @@ def update_customer(customer_id, n_top):
     tracemalloc.stop()
     print(f"Decision update - Peak memory usage was {peak / 10**6}MB")
 
+    return risk_output, decision_output
+    del risk_output, decision_output, current, peak
+    
+    
+# Callback for updating panel
+@app.callback(
+    Output('panel', 'figure'),
+    Input('maj_panel', 'n_clicks'),
+    State('customer_selection', 'value'),
+    State('customer_risk', 'children')
+)   
+    
+def update_panel(n_clicks, customer_id, customer_risk):
     # Show customer position on customer panel
     tracemalloc.start()
+    
+    panel_hist = dash_functions.load_panel()
     fig_panel = dash_functions.plot_panel(panel_hist, thres)
     
+    cust_bin = np.floor(float(customer_risk[:-1]))/100
     i_bin = panel_hist[1].tolist().index(cust_bin)
     cust_height = panel_hist[0][i_bin]
 
@@ -245,6 +257,11 @@ def update_customer(customer_id, n_top):
     tracemalloc.stop()
     print(f"Panel update - Peak memory usage was {peak / 10**6}MB")
     
+    return fig_panel
+    del panel_hist, fig_panel, current, peak
+    
+    
+def update_toptables():
     # Update top n_top tables
     tracemalloc.start()
     shaps, base_value =  dash_functions.shap_explain(customer_id, df_cust)
