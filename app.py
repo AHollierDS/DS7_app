@@ -159,6 +159,7 @@ app.layout = html.Div(children=[
         children=[
          # Criteria selection and description
         html.H2(children='Criteria description', style=H2_style),
+        html.Button('Update criteria description', id='maj_crit', n_clicks=0),
         html.Div(
             children=[
                 html.Div(
@@ -305,17 +306,18 @@ def update_topcrit(n_cliks, n_top, customer_id):
 
 
 # Callbacks with a new criteria selected
-#@app.callback(
-#    [Output(component_id='crit_descr', component_property='children'),
-#     Output(component_id='scatter_title', component_property='children'),
-#     Output(component_id='scatter_plot', component_property='figure'),
-#     Output(component_id='cust_crit_value', component_property='children'),
-#     Output(component_id='cust_crit_impact', component_property='children')],
-#    [Input(component_id='crit_selection', component_property='value'),
-#     Input(component_id='customer_selection', component_property='value')]
-#)
+@app.callback(
+    [Output('crit_descr', 'children'),
+     Output('scatter_title', 'children'),
+     Output('scatter_plot', 'figure'),
+     Output('cust_crit_value', 'children'),
+     Output('cust_crit_impact', 'children')],
+    Input('maj_crit', 'n_clicks'),
+    [State('crit_selection', 'value'),
+     State('customer_selection', 'value')]
+)
 
-def update_description(crit, cust=None):
+def update_description(n_click, crit, cust):
     """
     Plot scatter plot for evolution of impact with change in criteria value.
     """
@@ -350,7 +352,7 @@ def update_description(crit, cust=None):
         tracemalloc.stop()
         print(f"Criteria update - Peak memory usage was {peak / 10**6}MB")
         
-        #return output, title, fig, cust_crit_val, cust_crit_imp
+        return output, title, fig, cust_crit_val, cust_crit_imp
 
 
 # Run the dashboard   
