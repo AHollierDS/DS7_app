@@ -128,8 +128,17 @@ app.layout = html.Div(children=[
 
     # Top criteria section
     html.H2(children='Most important criteria', style =H2_style),
-    html.Button('Update top criteria', id='maj_topcrit', n_clicks=0),
+    html.Div(
+        className='row',
+        children = [
+            html.Button('Update waterfall', id='maj_water', 
+                        n_clicks=0, className='two columns'),
+            html.Button('Update top tables', id='maj_tables', 
+                        n_clicks=0, className='two columns') 
+        ]
+    ),
     
+    # Top criteria KPI
     html.Div(children=[
         html.Div(children=[
             html.H3(children='Waterfall for selected customer'),
@@ -151,7 +160,7 @@ app.layout = html.Div(children=[
             html.Div(id='top_tables')],
                  className='seven columns')
      ], className='row'),
-
+    
 
     # Criteria section
     html.Div(
@@ -265,20 +274,45 @@ def update_panel(n_clicks, customer_id, customer_risk):
     del panel_hist, fig_panel, current, peak
     
     
-# Callback for updating waterfall and top tables
+# Callback for updating waterfall
 @app.callback(
-    [Output('waterfall', 'figure'),
-     Output('top_tables', 'children')],
-    Input('maj_topcrit', 'n_clicks'),
+    Output('waterfall', 'figure'),
+    Input('maj_water', 'n_clicks'),
     [State('top_slider', 'value'),
      State('customer_selection', 'value')]
 )
 
-def update_topcrit(n_cliks, n_top, customer_id):
+def update_water(n_cliks, n_top, customer_id):
     """
     Generate waterfall and top tables of major criteria for a give customer.
     """
+    # Update waterfall
+    tracemalloc.start()
+    shaps, base_value =  dash_functions.shap_explain(customer_id, df_cust)
     
+    fig_waterfall = dash_functions.plot_waterfall(
+        df_cust, customer_id, n_top, thres, base_value, shaps)
+    del shaps
+    
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    print(f"Waterfall update - Peak memory usage was {peak / 10**6}MB")
+
+    return fig_waterfall
+    del fig_waterfall, current, peak, shaps, base_value
+    
+    
+# Callback for updating top tables
+@app.callback(
+    Output('top_tables', 'children'),
+    Input('maj_tables', 'n_clicks'),
+    [State('top_slider', 'value'),
+     State('customer_selection', 'value')]
+)    
+
+def update_tables(n_click, n_top, customer_id):
+    """
+    """
     # Update top n_top tables
     tracemalloc.start()
     shaps, base_value =  dash_functions.shap_explain(customer_id, df_cust)
@@ -289,22 +323,11 @@ def update_topcrit(n_cliks, n_top, customer_id):
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     print(f"Top tables update - Peak memory usage was {peak / 10**6}MB")
-
-    # Update waterfall
-    tracemalloc.start()
-
-    fig_waterfall = dash_functions.plot_waterfall(
-        df_cust, customer_id, n_top, thres, base_value, shaps)
-    del shaps
     
-    current, peak = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
-    print(f"Waterfall update - Peak memory usage was {peak / 10**6}MB")
+    return children_top
+    del children_top, shaps, base_value, current, peak
 
-    return fig_waterfall, children_top
-    del fig_waterfall, children_top, current, peak
-
-
+    
 # Callbacks with a new criteria selected
 @app.callback(
     [Output('crit_descr', 'children'),
