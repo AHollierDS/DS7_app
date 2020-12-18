@@ -134,6 +134,8 @@ app.layout = html.Div(children=[
     html.Div(
         className='row',
         children = [
+            html.Button('Load explanations', id='maj_explain', 
+                        n_clicks=0, className='two columns'),
             html.Button('Update waterfall', id='maj_water', 
                         n_clicks=0, className='two columns'),
             html.Button('Update top tables', id='maj_tables', 
@@ -207,8 +209,7 @@ app.layout = html.Div(children=[
 # Callback when new customer is selected
 @app.callback(
     [Output('customer_risk', 'children'),
-     Output('customer_decision', 'children'),
-     Output('shapleys', 'data')],
+     Output('customer_decision', 'children')],
     Input('customer_selection', 'value'),
     prevent_initial_call=True
 )
@@ -233,15 +234,31 @@ def update_customer(customer_id):
     decision_output = 'granted' if decision else 'denied'
     del decision
     
-    shaps, base_value =  dash_functions.shap_explain(customer_id, df_cust)
-    dic={'shaps':shaps, 'base':base_value}
-    
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     print(f"Decision update - Peak memory usage was {peak / 10**6}MB")
 
-    return risk_output, decision_output, dic
+    return risk_output, decision_output
     del risk_output, decision_output, current, peak
+
+    
+# Callback for loading explainations
+@app.callback(
+    Output('shapleys', 'data'),
+    Input('maj_explain', 'n_clicks'),
+    State('customer_selection', 'value'),
+    prevent_initial_call=True
+)
+
+def update_explaination(n_clicks, customer_id):
+    """
+    """
+    shaps, base_value =  dash_functions.shap_explain(customer_id, df_cust)
+    dic={'shaps':shaps, 'base':base_value}
+    
+    return dic
+    del shaps, base_value, dic
+    
     
     
 # Callback for updating panel
