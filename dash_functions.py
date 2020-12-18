@@ -408,6 +408,8 @@ def plot_shap_scatter(df_cust, df_shap, crit, cust, shaps, thres):
     s_vals = df_cust[[crit]].copy()
     s_vals.columns=['crit_value']
     
+    df_summary = s_shap.join(s_vals)
+    
     # Correspondence table
     corr_tab = {
         'NAME_CONTRACT_TYPE':{0:'Cash loans', 1:'Revolving loans'},
@@ -415,16 +417,16 @@ def plot_shap_scatter(df_cust, df_shap, crit, cust, shaps, thres):
     }
     
     if crit in corr_tab.keys():
-        s_vals['crit_value'].replace(corr_tab[crit], inplace=True)
+        df_summary['new_crit_value'] = df_summary['crit_value'].replace(
+            corr_tab[crit])
+    else :
+        df_summary['new_crit_value'] = df_summary['crit_value']
     
-    # Join data & visualization
-    df_summary = s_shap.join(s_vals)
-    
+    # Visualization
     fig=px.scatter(df_summary, 
-                   x='crit_value', y='shap_value', 
+                   x='new_crit_value', y='shap_value', 
                    color='estimated_risk',
-                   color_continuous_scale=['green', 'yellow', 'red'],
-                   #opacity=0.5
+                   color_continuous_scale=['green', 'yellow', 'red']
                   )
     
     fig.update_layout(
@@ -445,8 +447,13 @@ def plot_shap_scatter(df_cust, df_shap, crit, cust, shaps, thres):
               y0=df_summary['shap_value'].min(), y1=cust_shap,
               line_dash='dot', line_color='red')
 
+        if crit in corr_tab.keys():
+            xmin=df_summary['new_crit_value'].iloc[0]
+        else:
+            xmin=df_summary['crit_value'].min()
+        
         fig.add_shape(type='line', 
-                      x0=df_summary['crit_value'].min(), x1=cust_value, 
+                      x0=xmin, x1=cust_value, 
                       y0=cust_shap, y1=cust_shap,
                       line_dash='dot', line_color='red')
 
