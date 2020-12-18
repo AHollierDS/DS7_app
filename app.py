@@ -124,12 +124,12 @@ app.layout = html.Div(children=[
     # Customer position vs customers panel
     html.H2(children='Customer position in customer panel',style=H2_style),
     html.Button('Update panel', id='maj_panel', n_clicks=0),
-    dcc.Graph(id='panel', 
-              figure=dash_functions.plot_panel(panel_hist, thres)
-             ),
+    dcc.Graph(id='panel'),
 
     # Top criteria section
     html.H2(children='Most important criteria', style =H2_style),
+    html.Button('Update top criteria', id='maj_topcrit', n_clicks=0),
+    
     html.Div(children=[
         html.Div(children=[
             html.H3(children='Waterfall for selected customer'),
@@ -235,6 +235,9 @@ def update_customer(customer_id):
 )   
     
 def update_panel(n_clicks, customer_id, customer_risk):
+    """
+    Display customer panel as an histogram and show position of selected customer.
+    """
     # Show customer position on customer panel
     tracemalloc.start()
     
@@ -261,7 +264,20 @@ def update_panel(n_clicks, customer_id, customer_risk):
     del panel_hist, fig_panel, current, peak
     
     
-def update_toptables():
+# Callback for updating waterfall and top tables
+@app.callback(
+    [Output('waterfall', 'figure'),
+     Output('top_tables', 'children')],
+    Input('maj_topcrit', 'n_clicks'),
+    [State('top_slider', 'value'),
+     State('customer_selection', 'value')]
+)
+
+def update_topcrit(n_cliks, n_top, customer_id):
+    """
+    Generate waterfall and top tables of major criteria for a give customer.
+    """
+    
     # Update top n_top tables
     tracemalloc.start()
     shaps, base_value =  dash_functions.shap_explain(customer_id, df_cust)
@@ -278,26 +294,26 @@ def update_toptables():
 
     fig_waterfall = dash_functions.plot_waterfall(
         df_cust, customer_id, n_top, thres, base_value, shaps)
-    current, peak = tracemalloc.get_traced_memory()
     del shaps
     
+    current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     print(f"Waterfall update - Peak memory usage was {peak / 10**6}MB")
 
-    return risk_output, decision_output, fig_panel, fig_waterfall, children_top
-    del risk_output, decision_output, fig_panel, fig_waterfall, children_top
+    return fig_waterfall, children_top
+    del fig_waterfall, children_top, current, peak
 
 
 # Callbacks with a new criteria selected
-@app.callback(
-    [Output(component_id='crit_descr', component_property='children'),
-     Output(component_id='scatter_title', component_property='children'),
-     Output(component_id='scatter_plot', component_property='figure'),
-     Output(component_id='cust_crit_value', component_property='children'),
-     Output(component_id='cust_crit_impact', component_property='children')],
-    [Input(component_id='crit_selection', component_property='value'),
-     Input(component_id='customer_selection', component_property='value')]
-)
+#@app.callback(
+#    [Output(component_id='crit_descr', component_property='children'),
+#     Output(component_id='scatter_title', component_property='children'),
+#     Output(component_id='scatter_plot', component_property='figure'),
+#     Output(component_id='cust_crit_value', component_property='children'),
+#     Output(component_id='cust_crit_impact', component_property='children')],
+#    [Input(component_id='crit_selection', component_property='value'),
+#     Input(component_id='customer_selection', component_property='value')]
+#)
 
 def update_description(crit, cust=None):
     """
@@ -334,7 +350,7 @@ def update_description(crit, cust=None):
         tracemalloc.stop()
         print(f"Criteria update - Peak memory usage was {peak / 10**6}MB")
         
-        return output, title, fig, cust_crit_val, cust_crit_imp
+        #return output, title, fig, cust_crit_val, cust_crit_imp
 
 
 # Run the dashboard   
